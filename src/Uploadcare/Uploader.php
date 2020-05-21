@@ -147,10 +147,13 @@ class Uploader
             '_' => time(),
             'source_url' => $url,
             'pub_key' => $this->api->getPublicKey(),
-            'store' => $params['store'],
         );
-        if ($params['filename']) {
-            $requestData['filename'] = $params['filename'];
+
+        $requestParameters = array('filename', 'store', 'save_URL_duplicates', 'check_URL_duplicates');
+        foreach ($requestParameters as $requestParameter) {
+            if (isset($params[$requestParameter]) && !is_null($requestParameter)) {
+                $requestData[$requestParameter] = $params[$requestParameter];
+            }
         }
 
         $requestData = $this->getSignedUploadsData($requestData);
@@ -160,9 +163,9 @@ class Uploader
         $this->__setHeaders($ch);
 
         $data = $this->__runRequest($ch);
-        $token = $data->token;
+        $token = isset($data->token) ? $data->token : null;
 
-        if ($check_status) {
+        if ($check_status && $token) {
             $success = false;
             $attempts = 0;
             while (!$success) {
@@ -179,7 +182,7 @@ class Uploader
                 sleep($timeout);
                 $attempts++;
             }
-        } else {
+        } elseif ($token) {
             return $token;
         }
         $uuid = $data->uuid;
